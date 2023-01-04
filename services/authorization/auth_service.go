@@ -1,7 +1,7 @@
 package authorization
 
 import (
-	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/blogpost"
+	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/authorization"
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/security"
 	"context"
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *authService) Login(ctx context.Context, req *blogpost.LoginRequest) (*blogpost.TokenResponse, error) {
+func (s *authService) Login(ctx context.Context, req *authorization.LoginRequest) (*authorization.TokenResponse, error) {
 	log.Println("Login...")
 
 	errAuth := errors.New("username or password is wrong")
@@ -42,22 +42,22 @@ func (s *authService) Login(ctx context.Context, req *blogpost.LoginRequest) (*b
 		return nil, status.Errorf(codes.Unauthenticated, "security.GenerateJWT: %s", err.Error())
 	}
 
-	return &blogpost.TokenResponse{
+	return &authorization.TokenResponse{
 		Token: tokenStr,
 	}, nil
 }
 
 //*====================================================================================
 
-func (s *authService) HasAcces(ctx context.Context, req *blogpost.TokenRequest) (*blogpost.HasAccesResponse, error) {
+func (s *authService) HasAcces(ctx context.Context, req *authorization.TokenRequest) (*authorization.HasAccessResponse, error) {
 	log.Println("HasAccess...")
 
 	result, err := security.ParseClaims(req.Token, s.cfg.SecretKey)
 	if err != nil {
 		log.Println(status.Errorf(codes.Unauthenticated, "security.ParseClaims: %s", err.Error()))
-		return &blogpost.HasAccesResponse{
+		return &authorization.HasAccessResponse{
 			User:     nil,
-			HasAcces: false,
+			HasAccess: false,
 		}, nil
 	}
 
@@ -67,14 +67,14 @@ func (s *authService) HasAcces(ctx context.Context, req *blogpost.TokenRequest) 
 
 	if err != nil {
 		log.Println(status.Errorf(codes.Unauthenticated, "s.stg.GetUserById: %s", err.Error()))
-		return &blogpost.HasAccesResponse{
+		return &authorization.HasAccessResponse{
 			User:     nil,
-			HasAcces: false,
+			HasAccess: false,
 		}, nil
 	}
 
-	return &blogpost.HasAccesResponse{
+	return &authorization.HasAccessResponse{
 		User:     user,
-		HasAcces: true,
+		HasAccess: true,
 	}, nil
 }
