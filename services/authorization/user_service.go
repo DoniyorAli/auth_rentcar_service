@@ -2,11 +2,11 @@ package authorization
 
 import (
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/config"
-	blogpost "MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/blogpost"
+	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/authorization"
+
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/security"
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/storage"
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -16,7 +16,7 @@ import (
 type authService struct {
 	cfg config.Config
 	stg storage.StorageInter
-	blogpost.UnimplementedAuthServiceServer
+	authorization.UnimplementedAuthServiceServer
 }
 
 func NewAuthService(cfg config.Config, stg storage.StorageInter) *authService {
@@ -26,17 +26,10 @@ func NewAuthService(cfg config.Config, stg storage.StorageInter) *authService {
 	}
 }
 
-func (s *authService) Ping(ctx context.Context, req *blogpost.Empty) (*blogpost.Pong, error) {
-	log.Println("Ping")
-
-	return &blogpost.Pong{
-		Message: "OK",
-	}, nil
-}
 
 //?==============================================================================================================
 
-func (s *authService) CreateUser(ctx context.Context, req *blogpost.CreateUserRequest) (*blogpost.User, error) {
+func (s *authService) CreateUser(ctx context.Context, req *authorization.CreateUserRequest) (*authorization.User, error) {
 	id := uuid.New()
 
 	hashedPassword, err := security.HashPassword(req.Password)
@@ -62,7 +55,30 @@ func (s *authService) CreateUser(ctx context.Context, req *blogpost.CreateUserRe
 
 //?==============================================================================================================
 
-func (s *authService) UpdateUser(ctx context.Context, req *blogpost.UpdateUserRequest) (*blogpost.User, error) {
+func (s *authService) GetUserByID(ctx context.Context, req *authorization.GetUserByIDRequest) (*authorization.User, error) {
+	user, err := s.stg.GetUserById(req.Id)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "s.stg.GetUserById: %s", err.Error())
+	}
+
+	return user, nil
+}
+
+//?==============================================================================================================
+
+func (s *authService) GetUserList(ctx context.Context, req *authorization.GetUserListRequest) (*authorization.GetUserListResponse, error) {
+	res, err := s.stg.GetUserList(int(req.Offset), int(req.Limit), req.Search)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "s.stg.GetUserList: %s", err.Error())
+	}
+
+	return res, nil
+}
+
+//?==============================================================================================================
+
+func (s *authService) UpdateUser(ctx context.Context, req *authorization.UpdateUserRequest) (*authorization.User, error) {
 
 	hashedPassword, err := security.HashPassword(req.Password)
 	if err != nil {
@@ -88,7 +104,7 @@ func (s *authService) UpdateUser(ctx context.Context, req *blogpost.UpdateUserRe
 
 //?==============================================================================================================
 
-func (s *authService) DeleteUser(ctx context.Context, req *blogpost.DeleteUserRequest) (*blogpost.User, error) {
+func (s *authService) DeleteUser(ctx context.Context, req *authorization.DeleteUserRequest) (*authorization.User, error) {
 
 	user, err := s.stg.GetUserById(req.Id)
 
@@ -100,29 +116,6 @@ func (s *authService) DeleteUser(ctx context.Context, req *blogpost.DeleteUserRe
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "s.stg.DeleteUser: %s", err.Error())
-	}
-
-	return user, nil
-}
-
-//?==============================================================================================================
-
-func (s *authService) GetUserList(ctx context.Context, req *blogpost.GetUserListRequest) (*blogpost.GetUserListResponse, error) {
-	res, err := s.stg.GetUserList(int(req.Offset), int(req.Limit), req.Search)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "s.stg.GetUserList: %s", err.Error())
-	}
-
-	return res, nil
-}
-
-//?==============================================================================================================
-
-func (s *authService) GetUserByID(ctx context.Context, req *blogpost.GetUserByIDRequest) (*blogpost.User, error) {
-	user, err := s.stg.GetUserById(req.Id)
-
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "s.stg.GetUserById: %s", err.Error())
 	}
 
 	return user, nil
