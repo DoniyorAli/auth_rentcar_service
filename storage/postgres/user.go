@@ -1,30 +1,35 @@
 package postgres
 
 import (
-	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/blogpost"
+	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/authorization"
 	"errors"
 	"time"
 )
 
 // *=========================================================================
-func (stg Postgres) AddNewUser(id string, box *blogpost.CreateUserRequest) error {
+func (stg Postgres) AddNewUser(id string, req *authorization.CreateUserRequest) error {
 	_, err := stg.homeDB.Exec(`INSERT INTO "user" 
 	(
-		id,
-		username,
-		password,
-		user_type
+		"id", 
+		"fname", 
+		"lname", 
+		"username", 
+		"password",
+		"user_type", 
+		"address", 
+		"phone", 
+		"created_at"
 	) VALUES (
-		$1,
-		$2,
-		$3,
-		$4
-	)`,
-		id,
-		box.Username,
-		box.Password,
-		box.UserType,
-	)
+		$1, 
+		$2, 
+		$3, 
+		$4, 
+		$5, 
+		$6, 
+		$7, 
+		$8, 
+		now()
+	)`, id, req.Fname, req.Lname, req.Username, req.Password, req.UserType, req.Address, req.Phone)
 	if err != nil {
 		return err
 	}
@@ -32,26 +37,34 @@ func (stg Postgres) AddNewUser(id string, box *blogpost.CreateUserRequest) error
 }
 
 // *=========================================================================
-func (stg Postgres) GetUserById(id string) (*blogpost.User, error) {
-	res := &blogpost.User{}
+func (stg Postgres) GetUserById(id string) (*authorization.User, error) {
+	res := &authorization.User{}
 	var deletedAt *time.Time
 	var updatedAt *string
 
 	err := stg.homeDB.QueryRow(`SELECT 
-		id,
-		username,
-		password,
-		user_type,
-		created_at,
-		updated_at,
-		deleted_at
+		"id", 
+		"fname", 
+		"lname", 
+		"username", 
+		"password",
+		"user_type", 
+		"address", 
+		"phone", 
+		"created_at",
+		"updated_at", 
+		"deleted_at"
     FROM "user" WHERE id = $1`, id).Scan(
-		&res.Id,
-		&res.Username,
-		&res.Password,
+		&res.Id, 
+		&res.Fname, 
+		&res.Lname, 
+		&res.Username, 
+		&res.Password, 
 		&res.UserType,
-		&res.CreatedAt,
-		&updatedAt,
+		&res.Address, 
+		&res.Phone, 
+		&res.CreatedAt, 
+		&updatedAt, 
 		&deletedAt,
 	)
 	if err != nil {
@@ -70,20 +83,24 @@ func (stg Postgres) GetUserById(id string) (*blogpost.User, error) {
 }
 
 // *=========================================================================
-func (stg Postgres) GetUserList(offset, limit int, search string) (*blogpost.GetUserListResponse, error) {
-	res := &blogpost.GetUserListResponse{
-		User: make([]*blogpost.User, 0),
+func (stg Postgres) GetUserList(offset, limit int, search string) (*authorization.GetUserListResponse, error) {
+	res := &authorization.GetUserListResponse{
+		Users: make([]*authorization.User, 0),
 	}
 	rows, err := stg.homeDB.Queryx(`SELECT
-	id,
-	username,
-	password,
-	user_type,
-	created_at,
-	updated_at
-	FROM "user" WHERE deleted_at IS NULL AND (username ILIKE '%' || $1 || '%')
-	LIMIT $2
-	OFFSET $3
+		"id", 
+		"fname", 
+		"lname", 
+		"username", 
+		"password",
+		"user_type", 
+		"address", 
+		"phone",
+		"created_at",
+		"updated_at"
+	FROM "user" WHERE deleted_at IS NULL AND ("username" || "fname" || "lname" ILIKE '%' || $1 || '%')
+		LIMIT $2
+		OFFSET $3
 	`, search, limit, offset)
 
 	if err != nil {
@@ -91,16 +108,20 @@ func (stg Postgres) GetUserList(offset, limit int, search string) (*blogpost.Get
 	}
 
 	for rows.Next() {
-		a := &blogpost.User{}
+		a := &authorization.User{}
 
 		var updatedAt *string
 
 		err := rows.Scan(
-			&a.Id,
-			&a.Username,
-			&a.Password,
+			&a.Id, 
+			&a.Fname, 
+			&a.Lname, 
+			&a.Username, 
+			&a.Password, 
 			&a.UserType,
-			&a.CreatedAt,
+			&a.Address, 
+			&a.Phone, 
+			&a.CreatedAt, 
 			&updatedAt,
 		)
 		if err != nil {
@@ -111,16 +132,33 @@ func (stg Postgres) GetUserList(offset, limit int, search string) (*blogpost.Get
 			a.UpdatedAt = *updatedAt
 		}
 
-		res.User = append(res.User, a)
+		res.Users = append(res.Users, a)
 	}
 	return res, err
 }
 
 // *=========================================================================
-func (stg Postgres) UpdateUser(box *blogpost.UpdateUserRequest) error {
-	res, err := stg.homeDB.NamedExec(`UPDATE "user"  SET password=:p, updated_at=now() WHERE deleted_at IS NULL AND id=:id`, map[string]interface{}{
-		"id": box.Id,
-		"p":  box.Password,
+func (stg Postgres) UpdateUser(box *authorization.UpdateUserRequest) error {
+	res, err := stg.homeDB.NamedExec(
+	`UPDATE "user"  
+		SET 
+			"fname"=:f, 
+			"lname"=:l, 
+			"username"=:u, 
+			"password"=:p, 
+			"user_type"=:ut, 
+			"address"=:a, 
+			"phone"=:ph, 
+			"updated_at"=now() 
+		WHERE deleted_at IS NULL AND id=:id`, map[string]interface{}{
+			"id": box.Id,
+			"f":  box.Fname, 
+			"l": box.Lname, 
+			"u": box.Username, 
+			"p": box.Password,
+			"ut": box.UserType, 
+			"a": box.Address, 
+			"ph": box.Phone,
 	})
 	if err != nil {
 		return err
@@ -156,26 +194,34 @@ func (stg Postgres) DeleteUser(id string) error {
 }
 
 // *=========================================================================
-func (stg Postgres) GetUserByUsername(username string) (*blogpost.User, error) {
-	res := &blogpost.User{}
+func (stg Postgres) GetUserByUsername(username string) (*authorization.User, error) {
+	res := &authorization.User{}
 	var deletedAt *time.Time
 	var updatedAt *string
 
 	err := stg.homeDB.QueryRow(`SELECT 
-		id,
-		username,
-		password,
-		user_type,
-		created_at,
-		updated_at,
-		deleted_at
-    FROM "user" WHERE username = $1`, username).Scan(
-		&res.Id,
-		&res.Username,
-		&res.Password,
+		"id", 
+		"fname", 
+		"lname", 
+		"username", 
+		"password",
+		"user_type", 
+		"address", 
+		"phone", 
+		"created_at",
+		"updated_at", 
+		"deleted_at"
+    FROM "user" WHERE id = $1`,username).Scan(
+		&res.Id, 
+		&res.Fname, 
+		&res.Lname, 
+		&res.Username, 
+		&res.Password, 
 		&res.UserType,
-		&res.CreatedAt,
-		&updatedAt,
+		&res.Address, 
+		&res.Phone, 
+		&res.CreatedAt, 
+		&updatedAt, 
 		&deletedAt,
 	)
 	if err != nil {
