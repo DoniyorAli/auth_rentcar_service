@@ -1,14 +1,14 @@
 package storage
 
 import (
-	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/blogpost"
+	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/authorization"
 )
 
 type StorageInter interface {
-	AddNewUser(id string, box *blogpost.CreateUserRequest) error
-	GetUserById(id string) (*blogpost.User, error)
-	GetUserList(offset, limit int, search string) (dataset *blogpost.GetUserListResponse, err error)
-	UpdateUser(box *blogpost.UpdateUserRequest) error
+	AddNewUser(id string, box *authorization.CreateUserRequest) error
+	GetUserById(id string) (*authorization.User, error)
+	GetUserList(offset, limit int, search string) (dataset *authorization.GetUserListResponse, err error)
+	UpdateUser(box *authorization.UpdateUserRequest) error
 	DeleteUser(id string) error
-	GetUserByUsername(username string) (*blogpost.User, error)
+	GetUserByUsername(username string) (*authorization.User, error)
 }
