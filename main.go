@@ -2,9 +2,8 @@ package main
 
 import (
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/config"
-	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/blogpost"
-
-	"MyProjects/RentCar_gRPC/auth_rentcar_service/services/authorization"
+	"MyProjects/RentCar_gRPC/auth_rentcar_service/protogen/authorization"
+	serices	"MyProjects/RentCar_gRPC/auth_rentcar_service/services/authorization" //! services
 
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/storage"
 	"MyProjects/RentCar_gRPC/auth_rentcar_service/storage/postgres"
@@ -47,8 +46,8 @@ func main() {
 
 	srv := grpc.NewServer()
 
-	authService := authorization.NewAuthService(cfg, stg)
-	blogpost.RegisterAuthServiceServer(srv, authService)
+	authService := serices.NewAuthService(cfg, stg) //! <----- services
+	authorization.RegisterAuthServiceServer(srv, authService)
 
 	reflection.Register(srv)
 
