@@ -36,7 +36,7 @@ func Load() Config {
 
 	config := Config{}
 
-	config.App = cast.ToString(getOrReturnDefaultValue("APP", "article"))
+	config.App = cast.ToString(getOrReturnDefaultValue("APP", "rentcar_auth_service"))
 	config.AppVersion = cast.ToString(getOrReturnDefaultValue("APP_VERSION", "1.0.0"))
 	config.Environment = cast.ToString(getOrReturnDefaultValue("ENVIRONMENT", "development"))
 
