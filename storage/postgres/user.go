@@ -211,7 +211,7 @@ func (stg Postgres) GetUserByUsername(username string) (*authorization.User, err
 		"created_at",
 		"updated_at", 
 		"deleted_at"
-    FROM "user" WHERE id = $1`,username).Scan(
+    FROM "user" WHERE username = $1`,username).Scan(
 		&res.Id, 
 		&res.Fname, 
 		&res.Lname, 
