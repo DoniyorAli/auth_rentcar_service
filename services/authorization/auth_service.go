@@ -15,21 +15,21 @@ import (
 func (s *authService) Login(ctx context.Context, req *authorization.LoginRequest) (*authorization.TokenResponse, error) {
 	log.Println("Login...")
 
-	errAuth := errors.New("username or password is wrong")
+	errAuth := errors.New("username or password wrong")
 
 	user, err := s.stg.GetUserByUsername(req.Username)
 	if err != nil {
 		log.Println(err.Error())
-		return nil, status.Errorf(codes.Internal, errAuth.Error())
+		return nil, status.Errorf(codes.Unauthenticated, errAuth.Error())
 	}
 
 	match, err := security.ComparePassword(user.Password, req.Password)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "security.ComparePassword: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "security.ComparePassword: %s", err.Error())
 	}
 
 	if !match {
-		return nil, status.Errorf(codes.Internal, errAuth.Error())
+		return nil, status.Errorf(codes.Unauthenticated, errAuth.Error())
 	}
 
 	m := map[string]interface{}{
@@ -37,9 +37,9 @@ func (s *authService) Login(ctx context.Context, req *authorization.LoginRequest
 		"username": user.Username,
 	}
 
-	tokenStr, err := security.GenerateJWT(m, time.Minute*10, s.cfg.SecretKey)
+	tokenStr, err := security.GenerateJWT(m, 10*time.Minute, s.cfg.SecretKey)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "security.GenerateJWT: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "security.GenerateJWT: %s", err.Error())
 	}
 
 	return &authorization.TokenResponse{
@@ -47,16 +47,15 @@ func (s *authService) Login(ctx context.Context, req *authorization.LoginRequest
 	}, nil
 }
 
-//*====================================================================================
-
-func (s *authService) HasAcces(ctx context.Context, req *authorization.TokenRequest) (*authorization.HasAccessResponse, error) {
+// HasAccess ...
+func (s *authService) HasAccess(ctx context.Context, req *authorization.TokenRequest) (*authorization.HasAccessResponse, error) {
 	log.Println("HasAccess...")
 
 	result, err := security.ParseClaims(req.Token, s.cfg.SecretKey)
 	if err != nil {
 		log.Println(status.Errorf(codes.Unauthenticated, "security.ParseClaims: %s", err.Error()))
 		return &authorization.HasAccessResponse{
-			User:     nil,
+			User:      nil,
 			HasAccess: false,
 		}, nil
 	}
@@ -64,17 +63,16 @@ func (s *authService) HasAcces(ctx context.Context, req *authorization.TokenRequ
 	log.Println(result.Username)
 
 	user, err := s.stg.GetUserById(result.UserID)
-
 	if err != nil {
-		log.Println(status.Errorf(codes.Unauthenticated, "s.stg.GetUserById: %s", err.Error()))
+		log.Println(status.Errorf(codes.Unauthenticated, "s.stg.GetUserByID: %s", err.Error()))
 		return &authorization.HasAccessResponse{
-			User:     nil,
+			User:      nil,
 			HasAccess: false,
 		}, nil
 	}
 
 	return &authorization.HasAccessResponse{
-		User:     user,
+		User:      user,
 		HasAccess: true,
 	}, nil
 }
